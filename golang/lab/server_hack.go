@@ -4,7 +4,7 @@ Copyright IBM Corp. All Rights Reserved.
 SPDX-License-Identifier: Apache-2.0
 */
 
-package examples
+package main
 
 import (
 	"bytes"
@@ -26,7 +26,7 @@ import (
 )
 
 // The following IBM Cloud items need to be changed prior to running the sample program
-const address = "192.168.22.79:9876"
+const address = "192.168.22.80:9876"
 const cert = "client.pem"
 const key = "client-key.pem"
 const ca = "ca.pem"
@@ -64,7 +64,10 @@ func Example_getMechanismInfo() {
 	if err != nil {
 		panic(fmt.Errorf("Get mechanism list error: %s", err))
 	}
-	fmt.Printf("Got mechanism list:\n%v ...\n", mechanismListResponse.Mechs[:1])
+	fmt.Printf("Got mechanism list:\n ...\n")
+	for _, v := range mechanismListResponse.Mechs {
+		fmt.Println(v)
+	}
 
 	mechanismInfoRequest := &pb.GetMechanismInfoRequest{
 		Mech: ep11.CKM_RSA_PKCS,
@@ -111,6 +114,21 @@ func Example_encryptAndDecrypt() {
 		panic(fmt.Errorf("GenerateKey Error: %s", err))
 	}
 	fmt.Println("Generated AES Key")
+	//fmt.Printf("generateKeyStatus is %v\n,type is %T\n", generateKeyStatus, generateKeyStatus)
+	var mySlice []byte = generateKeyStatus.Key[0:256]
+
+	fmt.Printf("WK virtualization mask is %v\nSee 6.2.2 of page 178\n\n", mySlice[:32])
+	fmt.Printf("WK ID is %v\nSee 6.7.1 of page 181\n\n", mySlice[32:48])
+	fmt.Printf("Boolean attributes are %v\n", mySlice[48:56])
+	fmt.Printf("Mode identification is %v\n\n", mySlice[56:64])
+	fmt.Printf("IV structure is %v\n\n", mySlice[64:66])
+	fmt.Printf("IV is %v\n\n", mySlice[66:80])
+	fmt.Printf("Encrypted part is %v\n\n", mySlice[80:224])
+	fmt.Printf("MAC is %v\n\n", mySlice[224:])
+	fmt.Printf("length of key blob is %d\n", len(generateKeyStatus.Key))
+	//fmt.Printf("Key blob is %s\n", generateKeyStatus.GetKey())
+	fmt.Printf("Checksum is %v, length of checksum is %d\n", generateKeyStatus.GetCheckSum(), len(generateKeyStatus.CheckSum))
+	//fmt.Println(generateKeyStatus.String())
 
 	rngTemplate := &pb.GenerateRandomRequest{
 		Len: (uint64)(ep11.AES_BLOCK_SIZE),
@@ -126,6 +144,9 @@ func Example_encryptAndDecrypt() {
 		Mech: &pb.Mechanism{Mechanism: ep11.CKM_AES_CBC_PAD, Parameter: iv},
 		Key:  generateKeyStatus.Key, // you may want to store this
 	}
+
+	//fmt.Printf("generateKeyStatus.Key is %v \n", generateKeyStatus.Key)
+
 	cipherStateInit, err := cryptoClient.EncryptInit(context.Background(), encipherInitInfo)
 	if err != nil {
 		panic(fmt.Errorf("Failed EncryptInit [%s]", err))
@@ -168,6 +189,9 @@ func Example_encryptAndDecrypt() {
 		Mech: &pb.Mechanism{Mechanism: ep11.CKM_AES_CBC_PAD, Parameter: iv},
 		Key:  generateKeyStatus.Key, // you may want to store this
 	}
+
+	//fmt.Printf("generateKeyStatus.Key is %v \n", generateKeyStatus.Key)
+
 	decipherStateInit, err := cryptoClient.DecryptInit(context.Background(), decipherInitInfo)
 	if err != nil {
 		panic(fmt.Errorf("Failed DecryptInit [%s]", err))
@@ -383,10 +407,17 @@ func Example_signAndVerifyUsingECDSAKeyPair() {
 
 	cryptoClient := pb.NewCryptoClient(conn)
 
-	ecParameters, err := asn1.Marshal(util.OIDNamedCurveP256)
+	//ecParameters, err := asn1.Marshal(util.OIDNamedCurveP224)
+	//ecParameters, err := asn1.Marshal(util.OIDNamedCurveP256)
+	//ecParameters, err := asn1.Marshal(util.OIDNamedCurveP384)
+	fmt.Printf("unmarshalled stuff is %v\n\n", util.OIDNamedCurveP521)
+	ecParameters, err := asn1.Marshal(util.OIDNamedCurveP521)
+
 	if err != nil {
 		panic(fmt.Errorf("Unable to encode parameter OID: %s", err))
 	}
+
+	fmt.Printf("marshalled parameters are %v\n\n", ecParameters)
 
 	publicKeyECTemplate := util.NewAttributeMap(
 		util.NewAttribute(ep11.CKA_EC_PARAMS, ecParameters),
@@ -409,6 +440,26 @@ func Example_signAndVerifyUsingECDSAKeyPair() {
 
 	fmt.Println("Generated ECDSA PKCS key pair")
 
+	//fmt.Printf("generate Key Pair Response is: %s\n\n", generateKeyPairStatus)
+
+	//fmt.Printf("key pair private key is %v\n\n", generateKeyPairStatus.GetPrivKey())
+	fmt.Printf("key pair private key length is %d\n\n", len(generateKeyPairStatus.GetPrivKey()))
+	//fmt.Printf("key pair public key is %v\n\n", generateKeyPairStatus.GetPubKey())
+	fmt.Printf("key pair public key length is %d\n\n", len(generateKeyPairStatus.GetPubKey()))
+
+	privKeyLen := len(generateKeyPairStatus.GetPrivKey())
+
+	var mySlice []byte = generateKeyPairStatus.PrivKey[0:privKeyLen]
+
+	fmt.Printf("WK virtualization mask is %v\nSee 6.2.2 of page 178\n\n", mySlice[:32])
+	fmt.Printf("WK ID is %v\nSee 6.7.1 of page 181\n\n", mySlice[32:48])
+	fmt.Printf("Boolean attributes are %v\n", mySlice[48:56])
+	fmt.Printf("Mode identification is %v\n\n", mySlice[56:64])
+	fmt.Printf("IV structure is %v\n\n", mySlice[64:66])
+	fmt.Printf("IV is %v\n\n", mySlice[66:80])
+	fmt.Printf("Encrypted part is %v\n\n", mySlice[80:privKeyLen-32])
+	fmt.Printf("MAC is %v\n\n", mySlice[privKeyLen-32:])
+
 	/* 		pemBlock := &pem.Block{
 		Type: "HSM ENCRYPTED PRIVATE KEY",
 		Bytes: generateKeyPairStatus.PrivKey,
@@ -426,7 +477,8 @@ func Example_signAndVerifyUsingECDSAKeyPair() {
 	if err != nil {
 		panic(fmt.Errorf("SignInit error: %s", err))
 	}
-	signData := sha256.New().Sum([]byte("This data needs to be signed"))
+
+	signData := sha256.New().Sum([]byte("This data needs to be signed!"))
 	signRequest := &pb.SignRequest{
 		State: signInitResponse.State,
 		Data:  signData,
@@ -445,6 +497,8 @@ func Example_signAndVerifyUsingECDSAKeyPair() {
 	if err != nil {
 		panic(fmt.Errorf("VerifyInit error: %s", err))
 	}
+
+	signData = sha256.New().Sum([]byte("This data needs to be signed!"))
 	verifyRequest := &pb.VerifyRequest{
 		State:     verifyInitResponse.State,
 		Data:      signData,
@@ -569,7 +623,7 @@ func Example_wrapAndUnwrapKey() {
 
 	// Generate a AES key
 	desKeyTemplate := util.NewAttributeMap(
-		util.NewAttribute(ep11.CKA_VALUE_LEN, (uint64)(128/8)),
+		util.NewAttribute(ep11.CKA_VALUE_LEN, (uint64)(256/8)),
 		util.NewAttribute(ep11.CKA_ENCRYPT, true),
 		util.NewAttribute(ep11.CKA_DECRYPT, true),
 		util.NewAttribute(ep11.CKA_EXTRACTABLE, true), // must be true to be wrapped
@@ -615,6 +669,9 @@ func Example_wrapAndUnwrapKey() {
 	}
 	fmt.Println("Generated PKCS key pair")
 
+	fmt.Printf("the AES key prior to being wrapped is:\n%v\n\n", generateNewKeyStatus.Key)
+	fmt.Printf("the checksum of the key is: %v\n\n", generateNewKeyStatus.GetCheckSum()[:3])
+
 	wrapKeyRequest := &pb.WrapKeyRequest{
 		Mech: &pb.Mechanism{Mechanism: ep11.CKM_RSA_PKCS},
 		KeK:  generateKeyPairStatus.PubKey,
@@ -624,7 +681,7 @@ func Example_wrapAndUnwrapKey() {
 	if err != nil {
 		panic(fmt.Errorf("Wrap AES key error: %s", err))
 	}
-	fmt.Println("Wraped AES key")
+	fmt.Println("Wrapped AES key")
 
 	desUnwrapKeyTemplate := util.NewAttributeMap(
 		util.NewAttribute(ep11.CKA_CLASS, ep11.CKO_SECRET_KEY),
@@ -632,7 +689,7 @@ func Example_wrapAndUnwrapKey() {
 		util.NewAttribute(ep11.CKA_VALUE_LEN, (uint64)(128/8)),
 		util.NewAttribute(ep11.CKA_ENCRYPT, true),
 		util.NewAttribute(ep11.CKA_DECRYPT, true),
-		util.NewAttribute(ep11.CKA_EXTRACTABLE, true), // must be true to be wrapped
+		//util.NewAttribute(ep11.CKA_EXTRACTABLE, false), // must be true to be wrapped
 	)
 	unwrapRequest := &pb.UnwrapKeyRequest{
 		Mech:     &pb.Mechanism{Mechanism: ep11.CKM_RSA_PKCS},
@@ -640,21 +697,24 @@ func Example_wrapAndUnwrapKey() {
 		Wrapped:  wrapKeyResponse.Wrapped,
 		Template: desUnwrapKeyTemplate,
 	}
-	unWrapedResponse, err := cryptoClient.UnwrapKey(context.Background(), unwrapRequest)
+	unWrappedResponse, err := cryptoClient.UnwrapKey(context.Background(), unwrapRequest)
 	if err != nil {
 		panic(fmt.Errorf("Unwrap AES key error: %s", err))
 	}
-	if !bytes.Equal(generateNewKeyStatus.GetCheckSum()[:3], unWrapedResponse.GetCheckSum()[:3]) {
+	if !bytes.Equal(generateNewKeyStatus.GetCheckSum()[:3], unWrappedResponse.GetCheckSum()[:3]) {
 		panic(fmt.Errorf("Unwrap AES key has a different checksum than the original key"))
 	} else {
-		fmt.Println("Unwraped AES key")
+		fmt.Println("Unwrapped AES key")
 	}
+
+	fmt.Printf("the AES key after being wrapped and unwrapped is:\n%v\n\n", unWrappedResponse.GetUnwrapped())
+	fmt.Printf("the checksum of the unwrapped AES key is: %v\n\n", unWrappedResponse.GetCheckSum())
 
 	// Output:
 	// Generated AES key
 	// Generated PKCS key pair
-	// Wraped AES key
-	// Unwraped AES key
+	// Wrapped AES key
+	// Unwrapped AES key
 }
 
 // Example_deriveKey generates ECDHE key pairs for Bob and Alice and then generates AES keys for both of them.
@@ -778,4 +838,12 @@ func Example_deriveKey() {
 	// Generated Alice EC key pair
 	// Generated Bob EC key pair
 	// Alice and Bob get the same derived key
+}
+
+func main() {
+	//fmt.Println("hi there barry")
+	Example_getMechanismInfo()
+	Example_encryptAndDecrypt()
+	Example_signAndVerifyUsingECDSAKeyPair()
+	Example_wrapAndUnwrapKey()
 }
