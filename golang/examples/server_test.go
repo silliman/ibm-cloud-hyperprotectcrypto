@@ -26,10 +26,10 @@ import (
 )
 
 // The following IBM Cloud items need to be changed prior to running the sample program
-const address = "192.168.22.79:9876"
-const cert = "client.pem"
-const key = "client-key.pem"
-const ca = "ca.pem"
+const address = "192.168.22.79:19876"
+const cert = "../certs/client.pem"
+const key = "../certs/client-key.pem"
+const ca = "../certs/ca.pem"
 
 func getCallOpts() []grpc.DialOption {
 	certificate, _ := tls.LoadX509KeyPair(cert, key)
