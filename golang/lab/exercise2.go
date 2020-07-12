@@ -8,7 +8,9 @@ package main
 
 import (
 	"context"
+	"encoding/pem"
 	"fmt"
+	"os"
 	"reflect"
 
 	"github.com/ibm-developer/ibm-cloud-hyperprotectcrypto/golang/ep11"
@@ -52,28 +54,38 @@ func encryptAndDecrypt(keyLen int, textToEncrypt string) {
 	if err != nil {
 		panic(fmt.Errorf("GenerateKey Error: %s", err))
 	}
-	fmt.Println("Generated AES Key")
+	fmt.Println("Generated AES Key with mechanism ", ep11.CKM_AES_KEY_GEN)
+	fmt.Printf("\nlength of key blob is %d bytes\n", len(generateKeyStatus.Key))
 	//fmt.Printf("generateKeyStatus is %v\n,type is %T\n", generateKeyStatus, generateKeyStatus)
-	var mySlice []byte = generateKeyStatus.Key[0:256]
-
-	fmt.Printf("WK virtualization mask is %v\nSee 6.2.2 of page 179 of http://public.dhe.ibm.com/security/cryptocards/pciecc4/EP11/docs/ep11-structure.pdf\n\n", mySlice[:32])
-	fmt.Printf("WK ID is %v\nSee 6.7.1 on page 182 of  http://public.dhe.ibm.com/security/cryptocards/pciecc4/EP11/docs/ep11-structure.pdf\n\n", mySlice[32:48])
-	fmt.Printf("Boolean attributes are %v\n", mySlice[48:56])
-	fmt.Printf("Mode identification is %v\n\n", mySlice[56:64])
-	fmt.Printf("Blob version is %v\nSee 3.1.1 on page 141 of http://public.dhe.ibm.com/security/cryptocards/pciecc4/EP11/docs/ep11-structure.pdf\n\n", mySlice[64:66])
-	fmt.Printf("IV is %v\n\n", mySlice[66:80])
-	fmt.Printf("Encrypted part is %v\n\n", mySlice[80:len(generateKeyStatus.GetKey())-32])
-	fmt.Printf("MAC is %v\nMAC is 32 bytes, see field 15 in 3.1 on page 140 of http://public.dhe.ibm.com/security/cryptocards/pciecc4/EP11/docs/ep11-structure.pdf\n\n", mySlice[len(generateKeyStatus.GetKey())-32:])
-	fmt.Printf("length of key blob is %d\n", len(generateKeyStatus.Key))
-	fmt.Printf("Checksum is %v, length of checksum is %d\n\n", generateKeyStatus.GetCheckSum(), len(generateKeyStatus.CheckSum))
-
-	fmt.Println("Key blob is:")
+	fmt.Println("Key blob is (values in decimal):")
 	fmt.Printf("%v\n\n", generateKeyStatus.GetKey())
 	fmt.Println("The above structure is what you would save in order to persist this key blob.")
 	fmt.Println("")
-	fmt.Println(generateKeyStatus.String())
+	fmt.Println("Below is how the above structure would typically be saved, in PEM Format:\n ")
+	pemBlock := &pem.Block{
+		Type:  "HSM ENCRYPTED AES SECRET KEY",
+		Bytes: generateKeyStatus.GetKey(),
+	}
+	if err := pem.Encode(os.Stdout, pemBlock); err != nil {
+		panic(fmt.Errorf("Failed to encode AES Key: %s", err))
+	}
+
+	var mySlice []byte = generateKeyStatus.Key[0:256]
+
+	fmt.Printf("\nWK virtualization mask is %v\nSee 6.2.2 of page 179 of http://public.dhe.ibm.com/security/cryptocards/pciecc4/EP11/docs/ep11-structure.pdf\n\n", mySlice[:32])
+	fmt.Printf("WK ID is %v\nSee 6.7.1 on page 182 of  http://public.dhe.ibm.com/security/cryptocards/pciecc4/EP11/docs/ep11-structure.pdf\n\n", mySlice[32:48])
+	//fmt.Printf("Boolean attributes are %v\n", mySlice[48:56])
+	//fmt.Printf("Mode identification is %v\n\n", mySlice[56:64])
+	fmt.Printf("Blob version is %v\nSee 3.1.1 on page 141 of http://public.dhe.ibm.com/security/cryptocards/pciecc4/EP11/docs/ep11-structure.pdf\n\n", mySlice[64:66])
+	fmt.Printf("Initialization Vector is %v\n\n", mySlice[66:80])
+	fmt.Printf("Encrypted part is %v\n\n", mySlice[80:len(generateKeyStatus.GetKey())-32])
+	fmt.Printf("MAC is %v\nMAC is 32 bytes, see field 15 in 3.1 on page 140 of http://public.dhe.ibm.com/security/cryptocards/pciecc4/EP11/docs/ep11-structure.pdf\n\n", mySlice[len(generateKeyStatus.GetKey())-32:])
+	fmt.Printf("Checksum is %v, length of checksum is %d\n\n", generateKeyStatus.GetCheckSum(), len(generateKeyStatus.CheckSum))
+
+	//fmt.Println("")
+	//fmt.Println(generateKeyStatus.String())
 	fmt.Println("")
-	fmt.Printf("generateKeyStatus.Key is %v \n\n", generateKeyStatus.Key)
+	//fmt.Printf("\ngenerateKeyStatus.Key is %v \n\n", generateKeyStatus.Key)
 
 	rngTemplate := &pb.GenerateRandomRequest{
 		Len: (uint64)(ep11.AES_BLOCK_SIZE),
@@ -133,7 +145,7 @@ func encryptAndDecrypt(keyLen int, textToEncrypt string) {
 	}
 
 	ciphertext = append(ciphertext, encipherStateFinal.Ciphered...)
-	fmt.Println("in progress ciphertext is:")
+	fmt.Println("Final ciphertext is:")
 	fmt.Printf("%s\n\n", ciphertext)
 	//fmt.Println("Encrypted message")
 
@@ -182,23 +194,21 @@ func encryptAndDecrypt(keyLen int, textToEncrypt string) {
 		panic(fmt.Errorf("Failed DecryptFinal [%s]", err))
 	}
 	plaintext = append(plaintext, decipherStateFinal.Plain...)
-	fmt.Println("In progress decryption is:")
+	fmt.Println("Final decryption is:")
 	fmt.Printf("%s\n\n", plaintext)
 
 	if !reflect.DeepEqual(plain, plaintext) {
 		panic(fmt.Errorf("Failed comparing plain text of cipher single"))
+	} else {
+		fmt.Println("Original message equals decrypted message!")
 	}
 
-	fmt.Printf("Original message:  %s\n", plain)
+	fmt.Printf("\nOriginal message:  %s\n", plain)
 	fmt.Printf("Length of original message: %d\n", len(plain))
-	fmt.Printf("Encrypted message: %s\n", ciphertext)
+	fmt.Println("\nEncrypted message")
+	fmt.Printf("%s\n", ciphertext)
 	fmt.Printf("Length of encrypted message: %d\n", len(ciphertext))
-	fmt.Printf("Decrypted message: %s\n", plaintext)
+	fmt.Printf("\nDecrypted message: %s\n", plaintext)
+	fmt.Printf("Length of decrypted message: %d\n", len(plaintext))
 
-	// Output:
-	// Generated AES Key
-	// Generated IV
-	// Encrypted message
-	// Decrypted message
-	// Hello, this is a very long and creative message without any imagination
 }
