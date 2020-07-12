@@ -38,6 +38,7 @@ func signAndVerifyUsingECDSAKeyPair(curve string) {
 	//ecParameters, err := asn1.Marshal(util.OIDNamedCurveP256)
 	//ecParameters, err := asn1.Marshal(util.OIDNamedCurveP384)
 	ecParameters, err := asn1.Marshal(util.OIDNamedCurveP521)
+	fmt.Println("")
 
 	switch curve {
 	case "P224":
@@ -81,23 +82,24 @@ func signAndVerifyUsingECDSAKeyPair(curve string) {
 		panic(fmt.Errorf("GenerateKeyPair error: %s", err))
 	}
 
-	fmt.Println("Generated ECDSA PKCS key pair")
+	fmt.Println("Generated ECDSA PKCS key pair with mechanism ", ep11.CKM_EC_KEY_PAIR_GEN)
 
 	//fmt.Printf("generate Key Pair Response is: %s\n\n", generateKeyPairStatus)
 
-	fmt.Printf("key pair public key is %v\n\n", generateKeyPairStatus.GetPubKey())
-	fmt.Printf("key pair public key length is %d\n\n", len(generateKeyPairStatus.GetPubKey()))
-	fmt.Printf("key pair private key is %v\n\n", generateKeyPairStatus.GetPrivKey())
-	fmt.Printf("key pair private key length is %d\n\n", len(generateKeyPairStatus.GetPrivKey()))
+	fmt.Printf("\nkey pair public key blob length is %d bytes\n\n", len(generateKeyPairStatus.GetPubKey()))
+	fmt.Printf("key pair public key blob is %v\n\n", generateKeyPairStatus.GetPubKey())
+	fmt.Printf("key pair private key blob length is %d bytes\n\n", len(generateKeyPairStatus.GetPrivKey()))
+	fmt.Printf("key pair private key blob is %v\n\n", generateKeyPairStatus.GetPrivKey())
 
 	privKeyLen := len(generateKeyPairStatus.GetPrivKey())
 
 	var mySlice []byte = generateKeyPairStatus.PrivKey[0:privKeyLen]
 
-	fmt.Printf("WK virtualization mask is %v\nSee 6.2.2 of page 179 of http://public.dhe.ibm.com/security/cryptocards/pciecc4/EP11/docs/ep11-structure.pdf\n\n", mySlice[:32])
-	fmt.Printf("WK ID is %v\nSee 6.7.1 of page 182 of  http://public.dhe.ibm.com/security/cryptocards/pciecc4/EP11/docs/ep11-structure.pdf\n\n", mySlice[32:48])
-	fmt.Printf("Boolean attributes are %v\n", mySlice[48:56])
-	fmt.Printf("Mode identification is %v\n\n", mySlice[56:64])
+	fmt.Println("Some of the fields in the private key blob follow: ")
+	//fmt.Printf("WK virtualization mask is %v\nSee 6.2.2 of page 179 of http://public.dhe.ibm.com/security/cryptocards/pciecc4/EP11/docs/ep11-structure.pdf\n\n", mySlice[:32])
+	fmt.Printf("\nWK ID is %v\nSee 6.7.1 of page 182 of  http://public.dhe.ibm.com/security/cryptocards/pciecc4/EP11/docs/ep11-structure.pdf\n\n", mySlice[32:48])
+	//fmt.Printf("Boolean attributes are %v\n", mySlice[48:56])
+	//fmt.Printf("Mode identification is %v\n\n", mySlice[56:64])
 	fmt.Printf("Blob version is %v\nSee 3.1.1 on page 141 of http://public.dhe.ibm.com/security/cryptocards/pciecc4/EP11/docs/ep11-structure.pdf\n\n", mySlice[64:66])
 	fmt.Printf("IV is %v\n\n", mySlice[66:80])
 	fmt.Printf("Encrypted part is %v\n\n", mySlice[80:privKeyLen-32])
@@ -111,6 +113,8 @@ func signAndVerifyUsingECDSAKeyPair(curve string) {
 		panic(fmt.Errorf("Failed to encode Private EC Key: %s", err))
 	}
 
+	fmt.Println("")
+
 	pemBlock = &pem.Block{
 		Type:  "PUBLIC KEY",
 		Bytes: generateKeyPairStatus.GetPubKey(),
@@ -118,6 +122,8 @@ func signAndVerifyUsingECDSAKeyPair(curve string) {
 	if err := pem.Encode(os.Stdout, pemBlock); err != nil {
 		panic(fmt.Errorf("Failed to encode Public EC Key: %s", err))
 	}
+
+	fmt.Println("")
 
 	// Sign data
 	signInitRequest := &pb.SignInitRequest{
@@ -163,10 +169,7 @@ func signAndVerifyUsingECDSAKeyPair(curve string) {
 			panic(fmt.Errorf("Verify error: [%d]: %s", ep11Status.Code, ep11Status.Detail))
 		}
 	}
-	fmt.Println("Verified")
 
-	// Output:
-	// Generated ECDSA PKCS key pair
-	// Data signed
-	// Verified
+	fmt.Println("Signature verified")
+
 }
