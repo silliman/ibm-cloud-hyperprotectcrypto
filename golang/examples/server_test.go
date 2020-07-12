@@ -25,8 +25,19 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// The following IBM Cloud items need to be changed prior to running the sample program
-const address = "192.168.22.79:19876"
+/*
+   address constant is the IP address and port on which the GREP11 server is listening
+
+   cert constant is the Client certificate which is presented to the GREP11 server during TLS handshake
+
+   key constant is the Client private key which the client keeps private, but it is used during TLS handshake
+
+   ca constant is the certification authority certificate- the client expects the GREP11 server to present
+    a certificate that is signed and issued by this certification authority.  (The GREP11 server expects the
+    same from the certificate the client presents to it).
+*/
+
+const address = "192.168.22.80:19876"
 const cert = "../certs/client.pem"
 const key = "../certs/client-key.pem"
 const ca = "../certs/ca.pem"
