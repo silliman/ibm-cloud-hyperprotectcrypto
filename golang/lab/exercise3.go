@@ -24,9 +24,9 @@ import (
 
 // Example_signAndVerifyUsingECDSAKeyPair generates an ECDSA key pair and uses the key pair to sign and verify data
 // Flow: connect, generate ECDSA key pair, sign single-part data, verify single-part data
-func signAndVerifyUsingECDSAKeyPair(curve string) {
-	var callOpts = getCallOpts(cert, key, ca, address)
-	conn, err := grpc.Dial(address, callOpts...)
+func signAndVerifyUsingECDSAKeyPair(srvrAddr, curve string) {
+	var callOpts = getCallOpts(cert, key, ca, srvrAddr)
+	conn, err := grpc.Dial(srvrAddr, callOpts...)
 	if err != nil {
 		panic(fmt.Errorf("Could not connect to server: %s", err))
 	}

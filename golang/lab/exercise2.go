@@ -20,13 +20,13 @@ import (
 	grpc "google.golang.org/grpc"
 )
 
-var callOpts = getCallOpts(cert, key, ca, address)
-
 // encryptAndDecrypt encrypts and decrypts plain text
 // Flow: connect, generate AES key, generate IV, encrypt multi-part data, decrypt multi-part data
 
-func encryptAndDecrypt(keyLen int, textToEncrypt string) {
-	conn, err := grpc.Dial(address, callOpts...)
+func encryptAndDecrypt(srvrAddr string, keyLen int, textToEncrypt string) {
+	var callOpts = getCallOpts(cert, key, ca, srvrAddr)
+
+	conn, err := grpc.Dial(srvrAddr, callOpts...)
 	if err != nil {
 		panic(fmt.Errorf("Could not connect to server: %s", err))
 	}

@@ -16,9 +16,9 @@ import (
 
 // Example_getMechanismInfo retrieves a mechanism list and retrieves detailed information for the CKM_RSA_PKCS mechanism
 // Flow: connect, get mechanism list, get mechanism info
-func getMechanismInfo() {
-	var callOpts = getCallOpts(cert, key, ca, address)
-	conn, err := grpc.Dial(address, callOpts...)
+func getMechanismInfo(srvrAddr string) {
+	var callOpts = getCallOpts(cert, key, ca, srvrAddr)
+	conn, err := grpc.Dial(srvrAddr, callOpts...)
 	if err != nil {
 		panic(fmt.Errorf("Could not connect to server: %s", err))
 	}

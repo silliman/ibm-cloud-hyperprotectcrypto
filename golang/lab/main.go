@@ -28,6 +28,7 @@ func main() {
 	boolEx2Ptr := flag.Bool("ex2", false, "run exercise 2")
 	numbEx2KeyLenPtr := flag.Int("keyLength", 256, "length in bits")
 	strEx2PlaintextPtr := flag.String("plaintext", plain, "plaintext to encrypt and decrypt")
+	strGREP11srvrPtr := flag.String("server", address, "GREP11 server to connect to")
 
 	boolEx3Ptr := flag.Bool("ex3", false, "run exercise 3")
 	strEx3CurvePtr := flag.String("curve", "P521", "elliptic curve name")
@@ -67,16 +68,17 @@ func main() {
 		fmt.Println("")
 	}
 	if *boolEx1Ptr {
-		getMechanismInfo()
+		getMechanismInfo(*strGREP11srvrPtr)
 	}
 	if *boolEx2Ptr {
-		encryptAndDecrypt(*numbEx2KeyLenPtr, *strEx2PlaintextPtr)
+		encryptAndDecrypt(*strGREP11srvrPtr, *numbEx2KeyLenPtr, *strEx2PlaintextPtr)
 	}
 	if *boolEx3Ptr {
-		signAndVerifyUsingECDSAKeyPair(*strEx3CurvePtr)
+		signAndVerifyUsingECDSAKeyPair(*strGREP11srvrPtr, *strEx3CurvePtr)
 	}
 	if *boolEx4Ptr {
-		wrapAndUnwrapKey(*boolEx4WrapPtr, *boolEx4UnWrapPtr)
+		wrapAndUnwrapKey(*strGREP11srvrPtr, *boolEx4WrapPtr, *boolEx4UnWrapPtr)
 	}
+	
 
 }

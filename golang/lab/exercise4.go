@@ -19,9 +19,9 @@ import (
 
 // Example_wrapAndUnWrapKey wraps an AES key with a RSA public key and then unwraps it with the private key
 // Flow: connect, generate AES key, generate RSA key pair, wrap/unwrap AES key with RSA key pair
-func wrapAndUnwrapKey(wrapAllowed, unwrapAllowed bool) {
-	var callOpts = getCallOpts(cert, key, ca, address)
-	conn, err := grpc.Dial(address, callOpts...)
+func wrapAndUnwrapKey(srvrAddr string, wrapAllowed, unwrapAllowed bool) {
+	var callOpts = getCallOpts(cert, key, ca, srvrAddr)
+	conn, err := grpc.Dial(srvrAddr, callOpts...)
 	if err != nil {
 		panic(fmt.Errorf("Could not connect to server: %s", err))
 	}

@@ -23,16 +23,16 @@ import (
 const address = "192.168.22.80:9876"
 const cert = "../certs/client.pem"
 const key = "../certs/client-key.pem"
-const ca = "../certs/ca.pem"
+const ca = "../certs/wsc-hpvs-ca.pem"
 
-func getCallOpts(cert, key, ca, address string) []grpc.DialOption {
+func getCallOpts(cert, key, ca, srvrAddress string) []grpc.DialOption {
 	certificate, _ := tls.LoadX509KeyPair(cert, key)
 	cacert, _ := ioutil.ReadFile(ca)
 	certPool := x509.NewCertPool()
 	certPool.AppendCertsFromPEM(cacert)
 	callOpts := []grpc.DialOption{
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
-			ServerName:   address,
+			ServerName:   srvrAddress,
 			Certificates: []tls.Certificate{certificate},
 			RootCAs:      certPool,
 		})),
