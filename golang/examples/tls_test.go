@@ -62,6 +62,7 @@ func createECDSASelfSignedCert(privKey *util.EP11PrivateKey, commonName string, 
 		},
 		NotBefore: time.Now(),
 		NotAfter:  time.Now().Add(time.Hour * 24 * 180),
+		DNSNames: ["localhost"],
 	}
 
 	certDERBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, privKey.Public(), privKey)
