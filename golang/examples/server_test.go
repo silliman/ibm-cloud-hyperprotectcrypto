@@ -37,10 +37,10 @@ import (
     same from the certificate the client presents to it).
 */
 
-const address = "192.168.22.80:19876"
+const address = "192.168.22.80:9876"
 const cert = "../certs/client.pem"
 const key = "../certs/client-key.pem"
-const ca = "../certs/atgz-hpvs-ca.pem"
+const ca = "../certs/wsc-hpvs-ca.pem"
 
 func getCallOpts() []grpc.DialOption {
 	certificate, _ := tls.LoadX509KeyPair(cert, key)
